@@ -2,15 +2,22 @@ package gcp
 
 import (
 	"errors"
+	log "github.com/Sirupsen/logrus"
 )
 
 type Gcp struct {
 	receivers map[string]*Receiver
 	senders   map[string]*Sender
+	Logger    *log.Logger
+	logEntry  *log.Entry
 }
 
-func InitGcp() (*Gcp, error) {
+func InitGcp(logger *log.Logger) (*Gcp, error) {
 	ret := Gcp{}
+	ret.Logger = logger
+	ret.logEntry = logger.WithFields(log.Fields{
+		"module": "gcp",
+	})
 	return &ret, nil
 }
 

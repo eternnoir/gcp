@@ -1,5 +1,6 @@
 package gcp
 
 type Receiver interface {
-	Start()
+	Start() error
+	AddProcessor(processor *Processor) error
 }
