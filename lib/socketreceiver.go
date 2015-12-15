@@ -40,7 +40,6 @@ func (sr *SocketReceiver) Start() error {
 	defer sr.listener.Close()
 	for {
 		conn, err := sr.listener.Accept()
-		sr.logEntry.Info(len(sr.ProcressorList))
 		if err != nil {
 			sr.logEntry.Errorln(err)
 			continue
@@ -52,7 +51,7 @@ func (sr *SocketReceiver) Start() error {
 
 func (sr *SocketReceiver) handleIncome(conn net.Conn) {
 	for _, proc := range sr.ProcressorList {
-		proc.Process(conn, sr.basegcp)
+		proc.Process(conn)
 	}
 }
 
