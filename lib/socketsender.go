@@ -7,7 +7,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/eternnoir/gcp"
-	"github.com/eternnoir/pool"
+	pool "github.com/eternnoir/gncp"
 	"net"
 	"reflect"
 	"time"
@@ -18,7 +18,7 @@ var TimeOutError = errors.New("Send data timeout.")
 type SocketSender struct {
 	logEntry *log.Entry
 	basegcp  *gcp.Gcp
-	connpool pool.Pool
+	connpool pool.ConnPool
 	Host     string
 	Port     string
 	MinConn  int
@@ -36,7 +36,7 @@ func InitSocketSender(bgcp *gcp.Gcp, host, port string, minconn, maxconn int) (*
 		"module": "SocketSender",
 	})
 	factory := func() (net.Conn, error) { return net.Dial("tcp", host+":"+port) }
-	p, err := pool.NewChannelPool(minconn, maxconn, factory)
+	p, err := pool.NewPool(minconn, maxconn, factory)
 	if err != nil {
 		return nil, err
 	}
@@ -61,33 +61,38 @@ func (sender *SocketSender) Send(context interface{}, timeout int) (interface{},
 }
 
 func (sender *SocketSender) processSendRequest(data []byte, timeout int) ([]byte, error) {
-	c := make(chan net.Conn, 1)
+	result := make(chan []byte, 1)
+	errc := make(chan error, 1)
 	go func() {
-		conn, err := sender.connpool.Get(timeout / 2)
+		resultba, err := sender.fireRequest(data, timeout)
 		if err != nil {
 			sender.logEntry.Debugf("SocketSender Get connection error.%s", err)
+			errc <- err
 			return
 		}
-		c <- conn
-	}()
-
-	defer func() {
-		if len(c) > 0 {
-			conn := <-c
-			conn.Close()
-		}
+		result <- resultba
 	}()
 	select {
-	case conn := <-c:
-		return sender.fireRequest(data, conn)
+	case err := <-errc:
+		return nil, err
+	case res := <-result:
+		return res, nil
 	case <-time.After(time.Millisecond * time.Duration(timeout)):
 		return nil, TimeOutError
 	}
 }
 
-func (sender *SocketSender) fireRequest(data []byte, conn net.Conn) ([]byte, error) {
+func (sender *SocketSender) getConn(timeout int) (net.Conn, error) {
+	return sender.connpool.GetWithTimeout(time.Duration(timeout) * time.Millisecond)
+}
+
+func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error) {
+	conn, err := sender.getConn(timeout / 2)
+	if err != nil {
+		return nil, err
+	}
 	defer conn.Close()
-	_, err := conn.Write(data)
+	_, err = conn.Write(data)
 	if err != nil {
 		sender.logEntry.Errorf("SocketSender Send data error. %s", err)
 		return nil, err
