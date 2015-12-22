@@ -35,12 +35,10 @@ func InitSocketSender(bgcp *gcp.Gcp, host, port string, minconn, maxconn int) (*
 	sender.logEntry = bgcp.Logger.WithFields(log.Fields{
 		"module": "SocketSender",
 	})
-	factory := func() (net.Conn, error) { return net.Dial("tcp", host+":"+port) }
-	p, err := pool.NewPool(minconn, maxconn, factory)
+	err := sender.initConnectionPool()
 	if err != nil {
 		return nil, err
 	}
-	sender.connpool = p
 	return sender, nil
 }
 
@@ -87,6 +85,9 @@ func (sender *SocketSender) getConn(timeout int) (net.Conn, error) {
 }
 
 func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error) {
+	if sender.connpool == nil {
+		return nil, errors.New("Connection Pool error.")
+	}
 	conn, err := sender.getConn(timeout / 2)
 	if err != nil {
 		return nil, err
@@ -117,6 +118,16 @@ func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error
 		return nil, err
 	}
 	return buffer, nil
+}
+
+func (sender *SocketSender) initConnectionPool() error {
+	factory := func() (net.Conn, error) { return net.Dial("tcp", sender.Host+":"+sender.Port) }
+	p, err := pool.NewPool(sender.MinConn, sender.MaxConn, factory)
+	if err != nil {
+		return err
+	}
+	sender.connpool = p
+	return nil
 }
 
 func decodeLen(bytes []byte) uint16 {
