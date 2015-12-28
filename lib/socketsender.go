@@ -104,6 +104,7 @@ func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error
 
 	if err != nil {
 		sender.logEntry.Error(conn.RemoteAddr().String(), " connection error: ", err)
+		sender.connpool.Remove(conn)
 		return nil, err
 	}
 
