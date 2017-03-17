@@ -1,5 +1,7 @@
 package gcp
 
+import "context"
+
 type Processor interface {
-	Process(context interface{}) (interface{}, error)
+	Process(ctx context.Context, payloda interface{}) (interface{}, error)
 }

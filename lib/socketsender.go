@@ -1,16 +1,18 @@
 package lib
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/eternnoir/gcp"
-	pool "github.com/eternnoir/gncp"
 	"net"
 	"reflect"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/eternnoir/gcp"
+	pool "github.com/eternnoir/gncp"
 )
 
 var TimeOutError = errors.New("Send data timeout.")
@@ -50,10 +52,10 @@ func (sender *SocketSender) Stop() error {
 	return nil
 }
 
-func (sender *SocketSender) Send(context interface{}, timeout int) (interface{}, error) {
-	binaryary, ok := context.([]byte)
+func (sender *SocketSender) Send(ctx context.Context, payload interface{}, timeout int) (interface{}, error) {
+	binaryary, ok := payload.([]byte)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("SocketSender cast process context error. It should be []byte but %s", reflect.TypeOf(context)))
+		return nil, errors.New(fmt.Sprintf("SocketSender cast process context error. It should be []byte but %s", reflect.TypeOf(payload)))
 	}
 	return sender.processSendRequest(binaryary, timeout)
 }

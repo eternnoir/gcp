@@ -1,9 +1,11 @@
 package lib
 
 import (
+	"context"
+	"net"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/eternnoir/gcp"
-	"net"
 )
 
 type SocketReceiver struct {
@@ -17,7 +19,7 @@ type SocketReceiver struct {
 	logEntry       *log.Entry
 }
 
-func InitSocketReceiver(name, host, port string, bgcp *gcp.Gcp) (gcp.Receiver, error) {
+func InitSocketReceiver(bgcp *gcp.Gcp, name, host, port string) (gcp.Receiver, error) {
 	ret := SocketReceiver{}
 	ret.Name = name
 	ret.basegcp = bgcp
@@ -51,7 +53,8 @@ func (sr *SocketReceiver) Start() error {
 
 func (sr *SocketReceiver) handleIncome(conn net.Conn) {
 	for _, proc := range sr.ProcressorList {
-		proc.Process(conn)
+		ctx := context.Background()
+		proc.Process(ctx, conn)
 	}
 }
 
