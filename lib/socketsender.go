@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strconv"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -17,17 +18,23 @@ import (
 
 var TimeOutError = errors.New("Send data timeout.")
 
+const (
+	LengthCodecBinary = 1
+	LengthCodecBCD    = 2
+)
+
 type SocketSender struct {
-	logEntry *log.Entry
-	basegcp  *gcp.Gcp
-	connpool pool.ConnPool
-	Host     string
-	Port     string
-	MinConn  int
-	MaxConn  int
+	logEntry   *log.Entry
+	basegcp    *gcp.Gcp
+	connpool   pool.ConnPool
+	Host       string
+	Port       string
+	MinConn    int
+	MaxConn    int
+	LenghCodex int
 }
 
-func InitSocketSender(bgcp *gcp.Gcp, host, port string, minconn, maxconn int) (*SocketSender, error) {
+func InitSocketSender(bgcp *gcp.Gcp, host, port string, minconn, maxconn, lenghtCodex int) (*SocketSender, error) {
 	sender := new(SocketSender)
 	sender.Host = host
 	sender.Port = port
@@ -37,6 +44,7 @@ func InitSocketSender(bgcp *gcp.Gcp, host, port string, minconn, maxconn int) (*
 	sender.logEntry = bgcp.Logger.WithFields(log.Fields{
 		"module": "SocketSender",
 	})
+	sender.LenghCodex = lenghtCodex
 	err := sender.initConnectionPool()
 	if err != nil {
 		return nil, err
@@ -110,7 +118,7 @@ func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error
 		return nil, err
 	}
 
-	bytelen := decodeLen(lenbuffer)
+	bytelen := decodeLen(lenbuffer, sender.LenghCodex)
 
 	buffer := make([]byte, bytelen)
 	_, err2 := conn.Read(buffer)
@@ -133,6 +141,18 @@ func (sender *SocketSender) initConnectionPool() error {
 	return nil
 }
 
-func decodeLen(bytes []byte) uint16 {
-	return binary.BigEndian.Uint16(bytes)
+func decodeLen(bytes []byte, codex int) uint16 {
+	switch codex {
+	case LengthCodecBinary:
+		return binary.BigEndian.Uint16(bytes)
+	case LengthCodecBCD:
+		lenStr := hex.EncodeToString(bytes)
+		i, err := strconv.Atoi(lenStr)
+		if err != nil {
+			panic(err)
+		}
+		return uint16(i)
+	default:
+		panic("Not support codex.")
+	}
 }
