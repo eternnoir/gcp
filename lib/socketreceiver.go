@@ -13,20 +13,18 @@ type SocketReceiver struct {
 	Name           string
 	basegcp        *gcp.Gcp
 	Type           string
-	Host           string
-	Port           string
+	ListenAddr     string
 	ProcressorList []gcp.Processor
 	listener       net.Listener
 	tlsconfig      *tls.Config
 	logEntry       *log.Entry
 }
 
-func InitSocketReceiver(bgcp *gcp.Gcp, name, host, port string, tlscofnig *tls.Config) (gcp.Receiver, error) {
+func InitSocketReceiver(bgcp *gcp.Gcp, name, listenAddr string, tlscofnig *tls.Config) (gcp.Receiver, error) {
 	ret := SocketReceiver{}
 	ret.Name = name
 	ret.basegcp = bgcp
-	ret.Host = host
-	ret.Port = port
+	ret.ListenAddr = listenAddr
 	ret.Type = "tcp"
 	ret.ProcressorList = []gcp.Processor{}
 	ret.logEntry = bgcp.Logger.WithFields(log.Fields{
@@ -46,7 +44,7 @@ func (sr *SocketReceiver) Start() error {
 
 func (sr *SocketReceiver) startTls() error {
 	var err error
-	sr.listener, err = tls.Listen(sr.Type, sr.Host+":"+sr.Port, sr.tlsconfig)
+	sr.listener, err = tls.Listen(sr.Type, sr.ListenAddr, sr.tlsconfig)
 	if err != nil {
 		return err
 	}
@@ -64,7 +62,7 @@ func (sr *SocketReceiver) startTls() error {
 
 func (sr *SocketReceiver) startSocket() error {
 	var err error
-	sr.listener, err = net.Listen(sr.Type, sr.Host+":"+sr.Port)
+	sr.listener, err = net.Listen(sr.Type, sr.ListenAddr)
 	if err != nil {
 		return err
 	}
