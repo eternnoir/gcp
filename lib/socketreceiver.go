@@ -2,6 +2,7 @@ package lib
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -16,10 +17,11 @@ type SocketReceiver struct {
 	Port           string
 	ProcressorList []gcp.Processor
 	listener       net.Listener
+	tlsconfig      *tls.Config
 	logEntry       *log.Entry
 }
 
-func InitSocketReceiver(bgcp *gcp.Gcp, name, host, port string) (gcp.Receiver, error) {
+func InitSocketReceiver(bgcp *gcp.Gcp, name, host, port string, tlscofnig *tls.Config) (gcp.Receiver, error) {
 	ret := SocketReceiver{}
 	ret.Name = name
 	ret.basegcp = bgcp
@@ -30,10 +32,37 @@ func InitSocketReceiver(bgcp *gcp.Gcp, name, host, port string) (gcp.Receiver, e
 	ret.logEntry = bgcp.Logger.WithFields(log.Fields{
 		"module": ret.Name,
 	})
+	ret.tlsconfig = tlscofnig
 	return &ret, nil
 }
 
 func (sr *SocketReceiver) Start() error {
+	if sr.tlsconfig == nil {
+		return sr.startSocket()
+	} else {
+		return sr.startTls()
+	}
+}
+
+func (sr *SocketReceiver) startTls() error {
+	var err error
+	sr.listener, err = tls.Listen(sr.Type, sr.Host+":"+sr.Port, sr.tlsconfig)
+	if err != nil {
+		return err
+	}
+	defer sr.listener.Close()
+	for {
+		conn, err := sr.listener.Accept()
+		if err != nil {
+			sr.logEntry.Errorln(err)
+			continue
+		}
+		go sr.handleIncome(conn)
+	}
+
+}
+
+func (sr *SocketReceiver) startSocket() error {
 	var err error
 	sr.listener, err = net.Listen(sr.Type, sr.Host+":"+sr.Port)
 	if err != nil {
@@ -48,7 +77,6 @@ func (sr *SocketReceiver) Start() error {
 		}
 		go sr.handleIncome(conn)
 	}
-	return nil
 }
 
 func (sr *SocketReceiver) handleIncome(conn net.Conn) {
