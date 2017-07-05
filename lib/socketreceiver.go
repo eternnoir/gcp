@@ -45,6 +45,7 @@ func (sr *SocketReceiver) Start() error {
 func (sr *SocketReceiver) startTls() error {
 	var err error
 	sr.listener, err = tls.Listen(sr.Type, sr.ListenAddr, sr.tlsconfig)
+	sr.logEntry.Infof("Start tls %s server. %s", sr.Type, sr.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -63,6 +64,7 @@ func (sr *SocketReceiver) startTls() error {
 func (sr *SocketReceiver) startSocket() error {
 	var err error
 	sr.listener, err = net.Listen(sr.Type, sr.ListenAddr)
+	sr.logEntry.Infof("Start %s server. %s", sr.Type, sr.ListenAddr)
 	if err != nil {
 		return err
 	}
