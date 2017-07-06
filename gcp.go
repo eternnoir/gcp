@@ -9,18 +9,14 @@ import (
 type Gcp struct {
 	Receivers map[string]Receiver
 	Senders   map[string]Sender
-	Logger    *log.Logger
 	logEntry  *log.Entry
 }
 
-func InitGcp(logger *log.Logger) (*Gcp, error) {
+func InitGcp(logger *log.Entry) (*Gcp, error) {
 	ret := Gcp{}
 	ret.Receivers = map[string]Receiver{}
 	ret.Senders = map[string]Sender{}
-	ret.Logger = logger
-	ret.logEntry = logger.WithFields(log.Fields{
-		"module": "gcp",
-	})
+	ret.logEntry = logger
 	return &ret, nil
 }
 
