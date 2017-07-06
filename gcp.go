@@ -9,14 +9,14 @@ import (
 type Gcp struct {
 	Receivers map[string]Receiver
 	Senders   map[string]Sender
-	logEntry  *log.Entry
+	Logger    *log.Entry
 }
 
 func InitGcp(logger *log.Entry) (*Gcp, error) {
 	ret := Gcp{}
 	ret.Receivers = map[string]Receiver{}
 	ret.Senders = map[string]Sender{}
-	ret.logEntry = logger
+	ret.Logger = logger
 	return &ret, nil
 }
 
@@ -42,10 +42,10 @@ func (gcp *Gcp) AddSender(senderName string, sender Sender) error {
 
 func (gcp *Gcp) startAllReceiver() {
 	for key := range gcp.Receivers {
-		gcp.logEntry.Info("Start Receiver:" + key)
+		gcp.Logger.Info("Start Receiver:" + key)
 		err := gcp.Receivers[key].Start()
 		if err != nil {
-			gcp.logEntry.Errorf("Start Recevier %s %s. %s", key, " Fail", err)
+			gcp.Logger.Errorf("Start Recevier %s %s. %s", key, " Fail", err)
 			continue
 		}
 	}
