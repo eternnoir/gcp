@@ -60,7 +60,7 @@ func (sender *SocketSender) Stop() error {
 	return nil
 }
 
-func (sender *SocketSender) Send(ctx context.Context, payload interface{}, timeout int) (interface{}, error) {
+func (sender *SocketSender) Send(ctx context.Context, payload interface{}, timeout time.Duration) (interface{}, error) {
 	binaryary, ok := payload.([]byte)
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("SocketSender cast process context error. It should be []byte but %s", reflect.TypeOf(payload)))
@@ -68,7 +68,7 @@ func (sender *SocketSender) Send(ctx context.Context, payload interface{}, timeo
 	return sender.processSendRequest(binaryary, timeout)
 }
 
-func (sender *SocketSender) processSendRequest(data []byte, timeout int) ([]byte, error) {
+func (sender *SocketSender) processSendRequest(data []byte, timeout time.Duration) ([]byte, error) {
 	result := make(chan []byte, 1)
 	errc := make(chan error, 1)
 	go func() {
@@ -85,20 +85,20 @@ func (sender *SocketSender) processSendRequest(data []byte, timeout int) ([]byte
 		return nil, err
 	case res := <-result:
 		return res, nil
-	case <-time.After(time.Millisecond * time.Duration(timeout)):
+	case <-time.After(timeout):
 		return nil, TimeOutError
 	}
 }
 
-func (sender *SocketSender) getConn(timeout int) (net.Conn, error) {
-	return sender.connpool.GetWithTimeout(time.Duration(timeout) * time.Millisecond)
+func (sender *SocketSender) getConn(timeout time.Duration) (net.Conn, error) {
+	return sender.connpool.GetWithTimeout(timeout)
 }
 
-func (sender *SocketSender) fireRequest(data []byte, timeout int) ([]byte, error) {
+func (sender *SocketSender) fireRequest(data []byte, timeout time.Duration) ([]byte, error) {
 	if sender.connpool == nil {
 		return nil, errors.New("Connection Pool error.")
 	}
-	conn, err := sender.getConn(timeout / 2)
+	conn, err := sender.getConn(timeout)
 	if err != nil {
 		return nil, err
 	}

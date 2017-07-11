@@ -1,9 +1,12 @@
 package gcp
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Sender interface {
 	Start() error
 	Stop() error
-	Send(ctx context.Context, paylodad interface{}, timeout int) (interface{}, error)
+	Send(ctx context.Context, paylodad interface{}, timeout time.Duration) (interface{}, error)
 }
