@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"net"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/eternnoir/gcp"
+	log "github.com/sirupsen/logrus"
 )
 
 type SocketReceiver struct {

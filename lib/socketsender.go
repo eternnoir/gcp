@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/eternnoir/gcp"
 	pool "github.com/eternnoir/gncp"
+	log "github.com/sirupsen/logrus"
 )
 
 var TimeOutError = errors.New("Send data timeout.")
